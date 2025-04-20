@@ -65,21 +65,7 @@ def predict():
     try:
         input_df = pd.DataFrame([data])[model_columns]
         input_df = input_df.apply(pd.to_numeric)
-    except (ValueError, TypeError) as e:
-         error_message = f"Invalid data type for one or more features (must be numeric): {e}"
-         print(f"{COLOR_RED}>>> Server Bad Request (400): {error_message}{COLOR_RESET}")
-         return flask.jsonify({"error": error_message}), 400
-    except Exception as e:
-        print(f"{COLOR_RED}Server Error (500): Error processing input data - {e}{COLOR_RESET}")
-        return flask.jsonify({"error": "Internal server error during data processing"}), 500
-    try:
         scaled_features = scaler.transform(input_df)
-    except Exception as e:
-        print(f"{COLOR_RED}Server Error (500): Scaling failed - {e}{COLOR_RESET}")
-        return flask.jsonify({"error": "Internal server error during data scaling"}), 500
-    predicted_class = "Error"
-    prob_dict = {}
-    try:
         probabilities = model.predict_proba(scaled_features)
         probs_for_sample = probabilities[0]
         prob_dict = dict(zip(model.classes_, probs_for_sample))

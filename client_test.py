@@ -27,8 +27,8 @@ def load_components():
         print(f"FATAL ERROR: Failed to load '{COLUMNS_FILENAME}': {e}")
         return None, None
 
+    columns_to_read = list(set(model_columns + [TARGET_COLUMN]))
     try:
-        columns_to_read = list(set(model_columns + [TARGET_COLUMN]))
         df_train_full = pd.read_csv(TRAIN_FILE_PATH, usecols=columns_to_read)
         print(f"Loaded training data columns from {TRAIN_FILE_PATH} ({len(df_train_full)} rows)")
         if TARGET_COLUMN not in df_train_full.columns:
@@ -104,21 +104,30 @@ def send_request_and_analyze(index, row, model_columns):
         elif predicted_label in ['Port Scanning', 'Denial of Service', 'Malware']: print(f"  Analysis Result: Attack Detected ({predicted_label})")
         else: print(f"  Analysis Result: Potential Issue or Unknown Type ({predicted_label})")
         if probabilities and isinstance(probabilities, dict):
-             try: probs_str = ", ".join([f"{k}: {v:.4f}" for k, v in sorted(probabilities.items(), key=lambda item: item[1], reverse=True)]); print(f"  Probabilities: {{{probs_str}}}")
-             except Exception: print(f"  Raw Probabilities: {probabilities}")
+             probs_str = ", ".join([f"{k}: {v:.4f}" for k, v in sorted(probabilities.items(), key=lambda item: item[1], reverse=True)])
+             print(f"  Probabilities: {{{probs_str}}}")
         match = (predicted_label == expected_prediction_label)
         print(f"  Match (Predicted == Expected): {match}")
         success_count += 1
         if not match: mismatch_count += 1
         return True
 
-    except requests.exceptions.HTTPError as http_err: print(f"  ERROR: HTTP error: {http_err}"); error_count += 1
-    except requests.exceptions.ConnectionError as conn_err: print(f"  FATAL ERROR: Connection error: {conn_err}"); return 'STOP'
-    except requests.exceptions.Timeout as timeout_err: print(f"  ERROR: Timeout error: {timeout_err}"); error_count += 1
-    except requests.exceptions.RequestException as req_err: print(f"  ERROR: Request error: {req_err}"); error_count += 1
-    except json.JSONDecodeError: print(f"  ERROR: Failed to decode JSON response"); error_count += 1
+    except requests.exceptions.HTTPError as http_err:
+        print(f"  ERROR: HTTP error: {http_err}")
+        error_count += 1
+    except requests.exceptions.ConnectionError as conn_err:
+        print(f"  FATAL ERROR: Connection error: {conn_err}")
+        return 'STOP'
+    except requests.exceptions.Timeout as timeout_err:
+        print(f"  ERROR: Timeout error: {timeout_err}")
+        error_count += 1
+    except requests.exceptions.RequestException as req_err:
+        print(f"  ERROR: Request error: {req_err}")
+        error_count += 1
+    except json.JSONDecodeError:
+        print(f"  ERROR: Failed to decode JSON response")
+        error_count += 1
     return False
-
 model_columns, df_train_full = load_components()
 
 if model_columns is None or df_train_full is None:
@@ -138,14 +147,14 @@ while True:
     num_samples_input = 0
     if choice in ['1', '2']:
         while True:
-            try:
-                num_samples_input_str = input(f"  How many samples per class? (e.g., 3): ").strip()
+            num_samples_input_str = input(f"  How many samples per class? (e.g., 3): ").strip()
+            if num_samples_input_str.isdigit():
                 num_samples_input = int(num_samples_input_str)
                 if num_samples_input > 0:
                     break
                 else:
                     print("  Please enter a positive number.")
-            except ValueError:
+            else:
                 print("  Invalid input. Please enter a number.")
 
     if choice == '1':
@@ -170,22 +179,21 @@ while True:
 
         while True:
             class_choice_str = input("  Enter the number or exact name of the class to test: ").strip()
-            try:
-                 class_idx = int(class_choice_str) - 1
-                 if 0 <= class_idx < len(ALL_CLASSES):
-                     selected_class = ALL_CLASSES[class_idx]
-                     break
-                 else:
-                     print("  Invalid number.")
-            except ValueError:
-                 if class_choice_str in ALL_CLASSES:
-                      selected_class = class_choice_str
-                      break
-                 elif class_choice_str.lower() == 'none' and LABEL_FOR_NAN in ALL_CLASSES:
-                      selected_class = LABEL_FOR_NAN
-                      break
-                 else:
-                      print(f"  Invalid class name. Choose from: {ALL_CLASSES}")
+            if class_choice_str.isdigit():
+                class_idx = int(class_choice_str) - 1
+                if 0 <= class_idx < len(ALL_CLASSES):
+                    selected_class = ALL_CLASSES[class_idx]
+                    break
+                else:
+                    print("  Invalid number.")
+            elif class_choice_str in ALL_CLASSES:
+                selected_class = class_choice_str
+                break
+            elif class_choice_str.lower() == 'none' and LABEL_FOR_NAN in ALL_CLASSES:
+                selected_class = LABEL_FOR_NAN
+                break
+            else:
+                print(f"  Invalid class name. Choose from: {ALL_CLASSES}")
 
         print(f"Testing class: '{selected_class}'")
         df_to_test = get_samples(df_train_full, selected_class, num_samples_input)
