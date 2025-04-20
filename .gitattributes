@@ -1,0 +1,2 @@
+test_net.csv filter=lfs diff=lfs merge=lfs -text
+train_net.csv filter=lfs diff=lfs merge=lfs -text
