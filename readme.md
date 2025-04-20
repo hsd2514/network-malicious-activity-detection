@@ -1,4 +1,4 @@
-```markdown
+
 # Network Attack Detection API using MLP
 
 This project implements a machine learning model (Multi-Layer Perceptron) to detect network attacks based on flow data. It includes scripts for training the model, deploying it as a Flask web API, and interacting with the API using a client script.
@@ -103,4 +103,3 @@ The goal of this project is to automatically detect network attacks by analyzing
 *   The API is basic and lacks advanced features (authentication, rate limiting, etc.).
 *   Hyperparameter tuning for the MLP was not performed.
 *   **Recommendations:** Address class imbalance (SMOTE, class weights), tune hyperparameters, try different models (Random Forest, XGBoost), improve feature engineering/selection, acquire more diverse data (especially for attacks).
-```
